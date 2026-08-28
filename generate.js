@@ -134,7 +134,7 @@ const ctx = canvas.getContext("2d");
 
 
 const bg = await loadImage(
-"fondsombre2.png"
+"ninevicious.jpg"
 );
 
 
