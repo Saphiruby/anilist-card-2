@@ -2,547 +2,550 @@ import { request, gql } from "graphql-request";
 import { createCanvas, loadImage } from "canvas";
 import fs from "fs";
 
-
 const USERNAME = "ninevicious";
 
 
+// =====================
+// ANILIST QUERY
+// =====================
+
 const query = gql`
+  query ($name: String) {
+    User(name: $name) {
 
-query {
+      statistics {
 
-User(name:"${USERNAME}") {
+        anime {
+          count
+          episodesWatched
+          minutesWatched
+          meanScore
+        }
 
+        manga {
+          count
+          chaptersRead
+          volumesRead
+          meanScore
+        }
 
-statistics {
+      }
 
-anime {
+      favourites {
 
-count
-episodesWatched
-minutesWatched
-meanScore
+        anime {
+          nodes {
+            title {
+              romaji
+            }
 
-}
+            coverImage {
+              extraLarge
+            }
+          }
+        }
 
-manga {
+        manga {
+          nodes {
+            title {
+              romaji
+            }
 
-count
-chaptersRead
-volumesRead
-meanScore
+            coverImage {
+              extraLarge
+            }
+          }
+        }
 
-}
+        characters {
+          nodes {
+            name {
+              full
+            }
 
-}
+            image {
+              large
+            }
+          }
+        }
 
+      }
 
-
-favourites {
-
-
-anime {
-
-nodes {
-
-title {
-romaji
-}
-
-coverImage {
-extraLarge
-}
-
-}
-
-}
-
-
-
-manga {
-
-nodes {
-
-title {
-romaji
-}
-
-coverImage {
-extraLarge
-}
-
-}
-
-}
-
-
-
-characters {
-
-nodes {
-
-name {
-full
-}
-
-image {
-large
-}
-
-}
-
-}
-
-
-
-}
-
-}
-
-}
-
+    }
+  }
 `;
 
 
+// =====================
+// FETCH ANILIST DATA
+// =====================
 
-const data = await request(
-"https://graphql.anilist.co",
-query
-);
+let data;
+
+try {
+
+  data = await request(
+    "https://graphql.anilist.co",
+    query,
+    {
+      name: USERNAME
+    }
+  );
+
+} catch (error) {
+
+  console.error("=================================");
+  console.error("       ANILIST API ERROR");
+  console.error("=================================");
+
+  console.error(
+    JSON.stringify(error, null, 2)
+  );
+
+  console.error("=================================");
+
+  throw error;
+}
 
 
 const user = data.User;
 
 
+// Vérification supplémentaire
+if (!user) {
+
+  throw new Error(
+    `Utilisateur AniList introuvable : ${USERNAME}`
+  );
+
+}
+
+
+// =====================
+// CANVAS
+// =====================
 
 const WIDTH = 1200;
 const HEIGHT = 1250;
 
-
 const canvas = createCanvas(
-WIDTH,
-HEIGHT
+  WIDTH,
+  HEIGHT
 );
 
 const ctx = canvas.getContext("2d");
-
-
 
 
 // =====================
 // BACKGROUND
 // =====================
 
-
 const bg = await loadImage(
-"ninevicious.jpg"
+  "ninevicious.jpg"
 );
-
 
 const scale = Math.max(
-WIDTH / bg.width,
-HEIGHT / bg.height
+  WIDTH / bg.width,
+  HEIGHT / bg.height
 );
 
+const bgWidth =
+  bg.width * scale;
 
-const bgWidth = bg.width * scale;
-const bgHeight = bg.height * scale;
-
+const bgHeight =
+  bg.height * scale;
 
 ctx.drawImage(
-bg,
-(WIDTH - bgWidth) / 2,
-(HEIGHT - bgHeight) / 2,
-bgWidth,
-bgHeight
+  bg,
+  (WIDTH - bgWidth) / 2,
+  (HEIGHT - bgHeight) / 2,
+  bgWidth,
+  bgHeight
 );
-
 
 
 ctx.fillStyle =
-"rgba(19,31,46,0.82)";
-
+  "rgba(19,31,46,0.82)";
 
 ctx.fillRect(
-0,
-0,
-WIDTH,
-HEIGHT
+  0,
+  0,
+  WIDTH,
+  HEIGHT
 );
-
-
-
 
 
 // =====================
 // TEXT
 // =====================
 
-
 function text(
-txt,
-x,
-y,
-size,
-color="#ffffff"
-){
+  txt,
+  x,
+  y,
+  size,
+  color = "#ffffff"
+) {
 
-ctx.fillStyle = color;
+  ctx.fillStyle = color;
 
-ctx.font =
-`bold ${size}px Arial`;
+  ctx.font =
+    `bold ${size}px Arial`;
 
-ctx.fillText(
-txt,
-x,
-y
-);
+  ctx.fillText(
+    txt,
+    x,
+    y
+  );
 
 }
 
 
-
+// =====================
+// USERNAME
+// =====================
 
 text(
-"ninevicious",
-70,
-80,
-55,
-"#b368e7"
+  USERNAME,
+  70,
+  80,
+  55,
+  "#b368e7"
 );
 
 
-
-
-
-
-
 // =====================
-// STATS
+// STAT BOX
 // =====================
-
 
 function statBox(
-title,
-value,
-x,
-y
-){
+  title,
+  value,
+  x,
+  y
+) {
+
+  ctx.fillStyle =
+    "#1c2b3d";
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    x,
+    y,
+    260,
+    90,
+    18
+  );
+
+  ctx.fill();
 
 
-ctx.fillStyle =
-"#1c2b3d";
+  text(
+    String(value),
+    x + 20,
+    y + 40,
+    35,
+    "#b368e7"
+  );
 
 
-ctx.beginPath();
-
-ctx.roundRect(
-x,
-y,
-260,
-90,
-18
-);
-
-ctx.fill();
-
-
-
-text(
-value,
-x + 20,
-y + 40,
-35,
-"#b368e7"
-);
-
-
-
-text(
-title,
-x + 20,
-y + 72,
-18
-);
-
+  text(
+    title,
+    x + 20,
+    y + 72,
+    18
+  );
 
 }
 
 
-
-
-
+// =====================
+// STAT LINE
+// =====================
 
 function statLine(
-title,
-stats,
-y
-){
+  title,
+  stats,
+  y
+) {
+
+  text(
+    title,
+    70,
+    y,
+    32,
+    "#b368e7"
+  );
 
 
-text(
-title,
-70,
-y,
-32,
-"#b368e7"
-);
+  const boxWidth = 260;
+  const gap = 25;
+  const startX = 70;
 
 
+  stats.forEach(
+    (stat, index) => {
 
-const boxWidth = 260;
-const gap = 25;
+      statBox(
+        stat.name,
+        stat.value,
+        startX +
+          index *
+          (boxWidth + gap),
+        y + 25
+      );
 
-
-const startX = 70;
-
-
-
-stats.forEach(
-(stat,index)=>{
-
-
-statBox(
-stat.name,
-stat.value,
-startX + index * (boxWidth + gap),
-y + 25
-);
-
-
-});
-
+    }
+  );
 
 }
-
-
-
-
-
-
-
-statLine(
-"Anime Statistics",
-[
-{
-name:"Count",
-value:user.statistics.anime.count
-},
-{
-name:"Episodes",
-value:user.statistics.anime.episodesWatched
-},
-{
-name:"Days",
-value:Math.ceil(
-user.statistics.anime.minutesWatched / 1440
-)
-}
-],
-170
-);
-
-
-
-
-
-
-
-statLine(
-"Manga Statistics",
-[
-{
-name:"Count",
-value:user.statistics.manga.count
-},
-{
-name:"Chapters",
-value:user.statistics.manga.chaptersRead
-},
-{
-name:"Volumes",
-value:user.statistics.manga.volumesRead
-}
-],
-350
-);
-
-
-
-
-
-
 
 
 // =====================
-// IMAGE KEEP RATIO
+// ANIME STATS
 // =====================
 
+statLine(
+  "Anime Statistics",
+  [
+    {
+      name: "Count",
+      value:
+        user.statistics.anime.count
+    },
+
+    {
+      name: "Episodes",
+      value:
+        user.statistics.anime.episodesWatched
+    },
+
+    {
+      name: "Days",
+      value:
+        Math.ceil(
+          user.statistics.anime.minutesWatched /
+          1440
+        )
+    }
+  ],
+  170
+);
+
+
+// =====================
+// MANGA STATS
+// =====================
+
+statLine(
+  "Manga Statistics",
+  [
+    {
+      name: "Count",
+      value:
+        user.statistics.manga.count
+    },
+
+    {
+      name: "Chapters",
+      value:
+        user.statistics.manga.chaptersRead
+    },
+
+    {
+      name: "Volumes",
+      value:
+        user.statistics.manga.volumesRead
+    }
+  ],
+  350
+);
+
+
+// =====================
+// IMAGE CONTAIN
+// =====================
 
 async function drawImageContain(
-img,
-x,
-y,
-w,
-h
-){
+  img,
+  x,
+  y,
+  w,
+  h
+) {
+
+  const ratio =
+    Math.min(
+      w / img.width,
+      h / img.height
+    );
+
+  const newW =
+    img.width * ratio;
+
+  const newH =
+    img.height * ratio;
 
 
-const ratio = Math.min(
-w / img.width,
-h / img.height
-);
-
-
-
-const newW =
-img.width * ratio;
-
-
-const newH =
-img.height * ratio;
-
-
-
-ctx.drawImage(
-img,
-x + (w-newW)/2,
-y + (h-newH)/2,
-newW,
-newH
-);
-
+  ctx.drawImage(
+    img,
+    x + (w - newW) / 2,
+    y + (h - newH) / 2,
+    newW,
+    newH
+  );
 
 }
 
 
-
-
-
-
-
-
 // =====================
-// FAVORITES
+// FAVORITE ROW
 // =====================
-
 
 async function drawRow(
-title,
-items,
-y,
-character=false
-){
+  title,
+  items,
+  y,
+  character = false
+) {
+
+  text(
+    title,
+    70,
+    y,
+    32,
+    "#b368e7"
+  );
 
 
-text(
-title,
-70,
-y,
-32,
-"#b368e7"
-);
+  const imageWidth = 110;
+  const imageHeight = 150;
+  const gap = 20;
 
 
+  if (!items || items.length === 0) {
 
-const imageWidth = 110;
-const imageHeight = 150;
-const gap = 20;
+    text(
+      "No favorites found",
+      70,
+      y + 70,
+      20,
+      "#ffffff"
+    );
 
+    return;
 
-
-const totalWidth =
-(items.length * imageWidth) +
-((items.length - 1) * gap);
-
-
-
-let x =
-(WIDTH - totalWidth) / 2;
+  }
 
 
-
-for(const item of items){
-
-
-const source =
-character
-?
-item.image.large
-:
-item.coverImage.extraLarge;
+  const totalWidth =
+    (items.length * imageWidth) +
+    ((items.length - 1) * gap);
 
 
-
-const img =
-await loadImage(source);
-
+  let x =
+    (WIDTH - totalWidth) / 2;
 
 
-await drawImageContain(
-img,
-x,
-y + 25,
-imageWidth,
-imageHeight
-);
+  for (const item of items) {
+
+    const source =
+      character
+        ? item?.image?.large
+        : item?.coverImage?.extraLarge;
 
 
+    // Protection si AniList ne fournit pas d'image
+    if (!source) {
 
-x += imageWidth + gap;
+      x +=
+        imageWidth + gap;
 
+      continue;
+
+    }
+
+
+    try {
+
+      const img =
+        await loadImage(source);
+
+
+      await drawImageContain(
+        img,
+        x,
+        y + 25,
+        imageWidth,
+        imageHeight
+      );
+
+    } catch (error) {
+
+      console.warn(
+        `Impossible de charger l'image pour ${
+          character
+            ? item?.name?.full
+            : item?.title?.romaji
+        }`
+      );
+
+    }
+
+
+    x +=
+      imageWidth + gap;
+
+  }
 
 }
 
 
-}
-
-
-
-
-
+// =====================
+// FAVORITE ANIME
+// =====================
 
 await drawRow(
-"Favorite Anime",
-user.favourites.anime.nodes.slice(0,8),
-500
+  "Favorite Anime",
+  user.favourites.anime.nodes.slice(0, 8),
+  500
 );
 
 
-
+// =====================
+// FAVORITE MANGA
+// =====================
 
 await drawRow(
-"Favorite Manga",
-user.favourites.manga.nodes.slice(0,8),
-720
+  "Favorite Manga",
+  user.favourites.manga.nodes.slice(0, 8),
+  720
 );
 
 
-
+// =====================
+// FAVORITE CHARACTERS
+// =====================
 
 await drawRow(
-"Favorite Characters",
-user.favourites.characters.nodes.slice(0,8),
-940,
-true
+  "Favorite Characters",
+  user.favourites.characters.nodes.slice(0, 8),
+  940,
+  true
 );
-
-
-
-
-
 
 
 // =====================
 // SAVE
 // =====================
 
-
 fs.writeFileSync(
-"profile.png",
-canvas.toBuffer("image/png")
+  "profile.png",
+  canvas.toBuffer("image/png")
 );
 
 
 console.log(
-"Profile updated!"
+  "Profile updated!"
 );
